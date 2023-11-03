@@ -406,11 +406,14 @@ class AI:
 
         # Iterate through the board (x=col/file, y=row/rank)
         for x in range(8):
-            for y in range(8):
+            for y in range(8): 
+                    
                     piece = gametiles[y][x].pieceonTile.tostring()
                     if (piece in values) and (piece != '-'): # If this piece is on the board, add its corresponding values
                         value += values[piece] # Material value 
-                        value += mobility_values[piece] * len(gametiles[y][x].pieceonTile.legalmoveb(gametiles)) # Mobility value                     
+                        moves = gametiles[y][x].pieceonTile.legalmoveb(gametiles)
+                        lenMoves = (0 if moves == None else len(moves))
+                        value += mobility_values[piece] * lenMoves # Mobility value                     
                         if (piece == 'k' or piece == 'K') and (endgame == True):
                             value += king_end_pos_values[piece][y][x]
                         elif (piece == 'k' or piece == 'K') and (endgame == False):
