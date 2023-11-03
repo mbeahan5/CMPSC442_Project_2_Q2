@@ -265,8 +265,8 @@ class AI:
 
         # Create a dictionary to hold mobility (# legal moves) multiplier values for each piece
         mobility_values = {
-            'P': -10, 'N': -35, 'B': -35, 'R': -50, 'Q': -100, 'K': 0, # Black piece values
-            'p': 10, 'n': 35, 'b': 35, 'r': 50, 'q': 100, 'k': 0       # White piece values
+            'P': -10, 'N': -35, 'B': -35, 'R': -50, 'Q': -50, 'K': 0, # Black piece values
+            'p': 10, 'n': 35, 'b': 35, 'r': 50, 'q': 50, 'k': 0       # White piece values
         }
 
         # Create a dictionary to hold associated position values for each piece
