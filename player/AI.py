@@ -408,7 +408,7 @@ class AI:
         for x in range(8):
             for y in range(8):
                     piece = gametiles[y][x].pieceonTile.tostring()
-                    if piece in values: # If this piece is on the board, add its corresponding values
+                    if (piece in values) and (piece != '-'): # If this piece is on the board, add its corresponding values
                         value += values[piece] # Material value 
                         value += mobility_values[piece] * len(gametiles[y][x].pieceonTile.legalmoveb(gametiles)) # Mobility value                     
                         if (piece == 'k' or piece == 'K') and (endgame == True):
