@@ -251,44 +251,172 @@ class AI:
 
 
     def calculateb(self,gametiles):
-        value=0
+        
+        # Define piece counter and queen boolean to determine endgame
+        piece_count = 0
+        no_queens = True
+        endgame = False
+
+        # Create a dictionary to hold associated piece values
+        values = {
+            'P': -100, 'N': -350, 'B': -350, 'R': -525, 'Q': -1000, 'K': -10000, # Black piece values
+            'p': 100, 'n': 350, 'b': 350, 'r': 525, 'q': 1000, 'k': 10000        # White piece values
+        }
+
+        # Create a dictionary to hold mobility (# legal moves) multiplier values for each piece
+        mobility_values = {
+            'P': -10, 'N': -35, 'B': -35, 'R': -50, 'Q': -100, 'K': 0, # Black piece values
+            'p': 10, 'n': 35, 'b': 35, 'r': 50, 'q': 100, 'k': 0       # White piece values
+        }
+
+        # Create a dictionary to hold associated position values for each piece
+        # *Note: piece value tables taken from: https://www.chessprogramming.org/Simplified_Evaluation_Function
+        pos_values = {
+            'p': [[0,  0,  0,  0,  0,  0,  0,  0], # White piece values
+                  [50, 50, 50, 50, 50, 50, 50, 50],
+                  [10, 10, 20, 30, 30, 20, 10, 10],
+                  [5,  5, 10, 25, 25, 10,  5,  5],
+                  [0,  0,  0, 20, 20,  0,  0,  0],
+                  [5, -5,-10,  0,  0,-10, -5,  5],
+                  [5, 10, 10,-20,-20, 10, 10,  5],
+                  [0,  0,  0,  0,  0,  0,  0,  0]],
+            'n': [[-50,-40,-30,-30,-30,-30,-40,-50],
+                  [-40,-20,  0,  0,  0,  0,-20,-40],
+                  [-30,  0, 10, 15, 15, 10,  0,-30],
+                  [-30,  5, 15, 20, 20, 15,  5,-30],
+                  [-30,  0, 15, 20, 20, 15,  0,-30],
+                  [-30,  5, 10, 15, 15, 10,  5,-30],
+                  [-40,-20,  0,  5,  5,  0,-20,-40],
+                  [-50,-40,-30,-30,-30,-30,-40,-50]],
+            'b': [[-20,-10,-10,-10,-10,-10,-10,-20],
+                  [-10,  0,  0,  0,  0,  0,  0,-10],
+                  [-10,  0,  5, 10, 10,  5,  0,-10],
+                  [-10,  5,  5, 10, 10,  5,  5,-10],
+                  [-10,  0, 10, 10, 10, 10,  0,-10],
+                  [-10, 10, 10, 10, 10, 10, 10,-10],
+                  [-10,  5,  0,  0,  0,  0,  5,-10],
+                  [-20,-10,-10,-10,-10,-10,-10,-20]],
+            'r': [[0,  0,  0,  0,  0,  0,  0,  0],
+                  [5, 10, 10, 10, 10, 10, 10,  5],
+                  [-5,  0,  0,  0,  0,  0,  0, -5],
+                  [-5,  0,  0,  0,  0,  0,  0, -5],
+                  [-5,  0,  0,  0,  0,  0,  0, -5],
+                  [-5,  0,  0,  0,  0,  0,  0, -5],
+                  [-5,  0,  0,  0,  0,  0,  0, -5],
+                  [0,  0,  0,  5,  5,  0,  0,  0]],
+            'q': [[-20,-10,-10, -5, -5,-10,-10,-20],
+                  [-10,  0,  0,  0,  0,  0,  0,-10],
+                  [-10,  0,  5,  5,  5,  5,  0,-10],
+                  [-5,  0,  5,  5,  5,  5,  0, -5],
+                  [0,  0,  5,  5,  5,  5,  0, -5],
+                  [-10,  5,  5,  5,  5,  5,  0,-10],
+                  [-10,  0,  5,  0,  0,  0,  0,-10],
+                  [-20,-10,-10, -5, -5,-10,-10,-20]],
+            'P': [[0, 0, 0, 0, 0, 0, 0, 0], # Black piece values (mirrored and inverted)
+                  [-5, -10, -10, 20, 20, -10, -10, -5],
+                  [-5, 5, 10, 0, 0, 10, 5, -5],                                    
+                  [0,  0,  0, -20, -20,  0,  0,  0],
+                  [-5,  -5, -10, -25, -25, -10,  -5,  -5],
+                  [-10, -10, -20, -30, -30, -20, -10, -10],
+                  [-50, -50, -50, -50, -50, -50, -50, -50],
+                  [0,  0,  0,  0,  0,  0,  0,  0]],
+            'N': [[50,40,30,30,30,30,40,50],
+                  [40,20,  0,  0,  0,  0,20,40],
+                  [30,  -5, -10, -15, -15, -10,  -5,30],
+                  [30,  0, -15, -20, -20, -15,  0,30],
+                  [30,  -5, -15, -20, -20, -15,  -5,30],                
+                  [30,  0, -10, -15, -15, -10,  0,30],
+                  [40,20,  0,  -5,  -5,  0,20,40],
+                  [50,40,30,30,30,30,40,50]],
+            'B': [[20,10,10,10,10,10,10,20],
+                  [-10,  5,  0,  0,  0,  0,  5,-10],
+                  [10, -10, -10, -10, -10, -10, -10,10],
+                  [10,  0, -10, -10, -10, -10,  0,10],
+                  [10,  -5,  -5, -10, -10,  -5,  -5,10],                  
+                  [10,  0,  -5, -10, -10,  -5,  0,10],
+                  [10,  0,  0,  0,  0,  0,  0,10],
+                  [20,10,10,10,10,10,10,20]],
+            'R': [[0,  0,  0,  -5,  -5,  0,  0,  0],                              
+                  [5,  0,  0,  0,  0,  0,  0, 5],
+                  [5,  0,  0,  0,  0,  0,  0, 5],
+                  [5,  0,  0,  0,  0,  0,  0, 5],
+                  [5,  0,  0,  0,  0,  0,  0, 5],
+                  [5,  0,  0,  0,  0,  0,  0, 5],
+                  [-5, -10, -10, -10, -10, -10, -10, -5],
+                  [0,  0,  0,  0,  0,  0,  0,  0]],
+            'Q': [[20,10,10, 5, 5,10,10,20],
+                  [10,  0,  -5,  0,  0,  0,  0,10],
+                  [10,  -5,  -5,  -5,  -5,  -5,  0,10],                  
+                  [0,  0,  -5,  -5,  -5,  -5,  0, 5],
+                  [5,  0,  -5,  -5,  -5,  -5,  0, 5],
+                  [10,  0,  -5,  -5,  -5,  -5,  0,10],
+                  [10,  0,  0,  0,  0,  0,  0,10],
+                  [20,10,10, 5, 5,10,10,20]]
+        }
+
+        # Define separate king position values (if we are in an endgame or not)
+        king_pos_values = {
+            'k': [[-30,-40,-40,-50,-50,-40,-40,-30], # White
+                  [-30,-40,-40,-50,-50,-40,-40,-30],
+                  [-30,-40,-40,-50,-50,-40,-40,-30],
+                  [-30,-40,-40,-50,-50,-40,-40,-30],
+                  [-20,-30,-30,-40,-40,-30,-30,-20],
+                  [-10,-20,-20,-20,-20,-20,-20,-10],
+                  [20, 20,  0,  0,  0,  0, 20, 20],
+                  [20, 30, 10,  0,  0, 10, 30, 20]],
+            'K': [[-20, -30, -10,  0,  0, -10, -30, -20], # Black
+                  [-20, -20,  0,  0,  0,  0, -20, -20],
+                  [10,20,20,20,20,20,20,10],                  
+                  [20,30,30,40,40,30,30,20],
+                  [30,40,40,50,50,40,40,30],
+                  [30,40,40,50,50,40,40,30],
+                  [30,40,40,50,50,40,40,30],
+                  [30,40,40,50,50,40,40,30]]
+        }
+        king_end_pos_values = {
+            'k': [[-50,-40,-30,-20,-20,-30,-40,-50], # White endgame
+                  [-30,-20,-10,  0,  0,-10,-20,-30],
+                  [-30,-10, 20, 30, 30, 20,-10,-30],
+                  [-30,-10, 30, 40, 40, 30,-10,-30],
+                  [-30,-10, 30, 40, 40, 30,-10,-30],
+                  [-30,-10, 20, 30, 30, 20,-10,-30],
+                  [-30,-30,  0,  0,  0,  0,-30,-30],
+                  [-50,-30,-30,-30,-30,-30,-30,-50]],
+            'K': [[50,30,30,30,30,30,30,50], # Black endgame
+                  [30,30,  0,  0,  0,  0,30,30],
+                  [30,10, -20, -30, -30, -20,10,30],                  
+                  [30,10, -30, -40, -40, -30,10,30],
+                  [30,10, -30, -40, -40, -30,10,30],
+                  [30,10, -20, -30, -30, -20,10,30],
+                  [30,20,10,  0,  0,10,20,30],
+                  [50,40,30,20,20,30,40,50]]
+        }
+
+        value = 0
+
+        # Determine endgame status
         for x in range(8):
             for y in range(8):
-                    if gametiles[y][x].pieceonTile.tostring()=='P':
-                        value=value-100
+                    piece = gametiles[y][x].pieceonTile.tostring()
+                    piece_count += 1
+                    if piece == 'Q' or piece == 'q':
+                        no_queens = False
+        if (piece_count <= 10) or (no_queens == True):
+            endgame = True
 
-                    if gametiles[y][x].pieceonTile.tostring()=='N':
-                        value=value-350
-
-                    if gametiles[y][x].pieceonTile.tostring()=='B':
-                        value=value-350
-
-                    if gametiles[y][x].pieceonTile.tostring()=='R':
-                        value=value-525
-
-                    if gametiles[y][x].pieceonTile.tostring()=='Q':
-                        value=value-1000
-
-                    if gametiles[y][x].pieceonTile.tostring()=='K':
-                        value=value-10000
-
-                    if gametiles[y][x].pieceonTile.tostring()=='p':
-                        value=value+100
-
-                    if gametiles[y][x].pieceonTile.tostring()=='n':
-                        value=value+350
-
-                    if gametiles[y][x].pieceonTile.tostring()=='b':
-                        value=value+350
-
-                    if gametiles[y][x].pieceonTile.tostring()=='r':
-                        value=value+525
-
-                    if gametiles[y][x].pieceonTile.tostring()=='q':
-                        value=value+1000
-
-                    if gametiles[y][x].pieceonTile.tostring()=='k':
-                        value=value+10000
+        # Iterate through the board (x=col/file, y=row/rank)
+        for x in range(8):
+            for y in range(8):
+                    piece = gametiles[y][x].pieceonTile.tostring()
+                    if piece in values: # If this piece is on the board, add its corresponding values
+                        value += values[piece] # Material value 
+                        value += mobility_values[piece] * len(gametiles[y][x].pieceonTile.legalmoveb(gametiles)) # Mobility value                     
+                        if (piece == 'k' or piece == 'K') and (endgame == True):
+                            value += king_end_pos_values[piece][y][x]
+                        elif (piece == 'k' or piece == 'K') and (endgame == False):
+                            value += king_pos_values[piece][y][x]
+                        else:
+                            value += pos_values[piece][y][x] # Position value
 
         return value
 
