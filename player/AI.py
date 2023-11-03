@@ -413,7 +413,7 @@ class AI:
                         value += values[piece] # Material value 
                         moves = gametiles[y][x].pieceonTile.legalmoveb(gametiles)
                         lenMoves = (0 if moves == None else len(moves))
-                        value += mobility_values[piece] * lenMoves # Mobility value                     
+                        value += mobility_values[piece] * lenMoves # the Mobility value                     
                         if (piece == 'k' or piece == 'K') and (endgame == True):
                             value += king_end_pos_values[piece][y][x]
                         elif (piece == 'k' or piece == 'K') and (endgame == False):
